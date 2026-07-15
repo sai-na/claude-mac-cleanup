@@ -98,7 +98,14 @@ t_pods()         { have pod  && run pod cache clean --all; }
 t_sims()         { have xcrun && run xcrun simctl delete unavailable; }
 t_derived_data() { wipe_dir "$HOME/Library/Developer/Xcode/DerivedData"; }
 t_sim_caches()   { wipe_dir "$HOME/Library/Developer/CoreSimulator/Caches"; }
-t_trash()        { wipe_dir "$HOME/.Trash"; }
+t_trash()        {   # macOS protects the ~/.Trash dir itself — empty its CONTENTS, not the dir.
+  local d="$HOME/.Trash"
+  [ -d "$d" ] || { echo "skip (absent): $d"; return 0; }
+  local before; before="$(du -sh "$d" 2>/dev/null | cut -f1)"
+  if [ "$DRY_RUN" != "0" ]; then echo "DRY-RUN would empty Trash contents: $d  (${before:-?})"; return 0; fi
+  echo "emptying Trash contents: $d  (${before:-?})"
+  find "$d" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true
+}
 t_gradle_junk()  { safe_rm "$HOME/.gradle/wrapper/dists/gradle-REPLACEME-all"
                    safe_rm "$HOME/.gradle/wrapper/dists/gradle-REPLACEME-bin"; }
 
@@ -209,10 +216,11 @@ main() {
     fn="t_${key//-/_}"
     if declare -F "$fn" >/dev/null; then
       echo "--- $key ---"
-      # A target may return non-zero simply because its tool/dir is absent (or safe_rm
-      # refused one path). Don't let set -e abort the rest of the batch — isolate each
-      # target and report a skip. Real delete errors still print via safe_rm's own output.
-      "$fn" || echo "  (nothing to do for '$key' — tool/app not installed or already clean)"
+      # Run each target in a SUBSHELL so a failing external tool (e.g. xcrun with no full
+      # Xcode) or a protected path can never abort the rest of the batch under set -e.
+      # The subshell contains the failure; the parent's `|| echo` (exempt from set -e)
+      # reports a skip and moves on. The target's own stderr still prints.
+      ( "$fn" ) || echo "  (skipped '$key': tool/app not installed, path protected, or already clean)"
     else
       echo "unknown target: $key (try --list)" >&2
     fi
