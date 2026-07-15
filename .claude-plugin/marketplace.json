@@ -1,0 +1,19 @@
+{
+  "name": "claude-mac-cleanup",
+  "owner": { "name": "SAI NATH A" },
+  "metadata": {
+    "description": "Claude Code skills for safely reclaiming disk space and RAM on Apple Silicon macOS."
+  },
+  "plugins": [
+    {
+      "name": "mac-cleanup",
+      "source": "./",
+      "description": "Safely reclaim disk space and RAM on Apple Silicon macOS. Scan-first, confirm-before-delete.",
+      "version": "0.1.0",
+      "license": "MIT",
+      "homepage": "https://github.com/sai-na/claude-mac-cleanup",
+      "keywords": ["macos", "apple-silicon", "disk", "cleanup", "cache", "ram", "developer"],
+      "category": "productivity"
+    }
+  ]
+}
