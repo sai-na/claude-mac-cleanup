@@ -57,6 +57,26 @@ safe_rm() {
 # clear a cache dir but keep the dir itself (avoids the /* dotfile+empty-glob traps)
 wipe_dir() { safe_rm "$1" && { [ "$DRY_RUN" = "0" ] && mkdir -p -- "$1" || true; }; }
 
+# RECOVERABLE delete — moves to Trash (undoable) instead of rm. Same $HOME guard as safe_rm.
+# Used for creative-app caches, which sit near irreplaceable work, so a mistake must be recoverable.
+trash_path() {
+  local raw="${1:-}" t home
+  [ -n "$raw" ]                || { echo "REFUSE empty target" >&2; return 1; }
+  raw="${raw/#\~/$HOME}"
+  t="$(canon "$raw")"; home="$(canon "$HOME")"
+  [ -n "$t" ]                  || { echo "REFUSE empty canonical" >&2; return 1; }
+  case "$t" in /*) : ;; *) echo "REFUSE not absolute: $t" >&2; return 1;; esac
+  case "$t" in */../*|*/..) echo "REFUSE contains ..: $t" >&2; return 1;; esac
+  [ "$t" != "$home" ]         || { echo "REFUSE is \$HOME: $t" >&2; return 1; }
+  case "$t" in "$home"/?*) : ;; *) echo "REFUSE not under \$HOME: $t" >&2; return 1;; esac
+  [ -e "$t" ]                  || { echo "skip (absent): $t"; return 0; }
+  local before; before="$(du -sh "$t" 2>/dev/null | cut -f1)"
+  if [ "$DRY_RUN" != "0" ]; then echo "DRY-RUN would move to Trash: $t  (${before:-?})"; return 0; fi
+  echo "→ Trash (recoverable): $t  (${before:-?})"
+  if command -v trash >/dev/null 2>&1; then trash "$t"
+  else osascript -e "tell application \"Finder\" to delete (POSIX file \"${t}\" as alias)" >/dev/null 2>&1; fi
+}
+
 # run a tool's own cache cleaner (dry-run just prints it)
 run() {
   local IFS=' '   # join $* with spaces for display (script-wide IFS is \n\t)
@@ -116,12 +136,47 @@ t_colima_stop()  { have colima && run colima stop; }   # frees RAM + releases di
 # require picking a specific version and cross-checking project pins — do those interactively
 # from SKILL.md, not as blind bulk targets. See references/cleanup-targets.md.
 
+# ---------------------------------------------------------------------------
+#  CREATIVE-PRO app caches — genuinely safe, $HOME-scoped, and NOT sitting next
+#  to originals. Moved to TRASH (recoverable), because creative work is nearby.
+#  QUIT the app first. For caches that live inside a library bundle (.fcpbundle,
+#  .photoslibrary, .cocatalog, .logicx) or next to a catalog, use the app's OWN
+#  purge — those are documented in references/creative-pro-targets.md, NOT here.
+# ---------------------------------------------------------------------------
+t_adobe_mediacache() {   # shared Premiere/AE/Media Encoder cache — NOT Motion Graphics Templates
+  trash_path "$HOME/Library/Application Support/Adobe/Common/Media Cache Files"
+  trash_path "$HOME/Library/Application Support/Adobe/Common/Media Cache"
+  trash_path "$HOME/Library/Application Support/Adobe/Common/Peak Files"
+}
+t_ae_diskcache()  { trash_path "$HOME/Library/Caches/Adobe/After Effects"; }
+t_camera_raw()    { for d in "$HOME"/Library/Caches/Adobe\ Camera\ Raw*; do [ -e "$d" ] && trash_path "$d"; done; }
+t_bridge_cache()  { for d in "$HOME"/Library/Caches/Adobe/Bridge*; do [ -e "$d" ] && trash_path "$d"; done; }
+t_ableton_cache() { trash_path "$HOME/Library/Caches/Ableton/Cache"; }
+t_au_cache()      { trash_path "$HOME/Library/Caches/AudioUnitCache"; trash_path "$HOME/Library/Caches/com.apple.audiounits.cache"; }
+t_logic_cache()   { trash_path "$HOME/Library/Caches/com.apple.logic10"; }
+t_browser_cache() {   # relocated HTTP/code cache only — never the App Support profile (bookmarks/passwords)
+  echo "!! Quit the browser first, or the cache is locked and only partially clears."
+  trash_path "$HOME/Library/Caches/Google/Chrome"
+  trash_path "$HOME/Library/Caches/com.brave.Browser"
+  trash_path "$HOME/Library/Caches/company.thebrowser.Browser"
+  trash_path "$HOME/Library/Caches/Firefox"
+  trash_path "$HOME/Library/Containers/com.apple.Safari/Data/Library/Caches"
+}
+t_diagnostics()   { trash_path "$HOME/Library/Logs/DiagnosticReports"; }
+t_quicklook()     { run qlmanage -r cache; }
+
 declare -a SAFE=(npm pnpm yarn brew pip uv go_build pods sims derived_data sim_caches trash gradle_junk gradle_caches)
 declare -a CAUTION=(ios_devsupport go_modcache gradle_dists maven bun pub_cache docker_prune colima_stop)
+# CREATIVE targets move to Trash (recoverable). Quit the app first.
+declare -a CREATIVE=(adobe_mediacache ae_diskcache camera_raw bridge_cache ableton_cache au_cache logic_cache browser_cache diagnostics quicklook)
 
 list_targets() {
-  echo "SAFE (regenerate automatically, cheap):"; printf '  %s\n' "${SAFE[@]}"
-  echo "CAUTION (regenerate but big/slow re-download or state loss):"; printf '  %s\n' "${CAUTION[@]}"
+  echo "SAFE — dev caches, regenerate automatically, deleted with rm:"; printf '  %s\n' "${SAFE[@]}"
+  echo "CAUTION — regenerate but big/slow re-download or state loss:"; printf '  %s\n' "${CAUTION[@]}"
+  echo "CREATIVE — app caches, moved to TRASH (recoverable); QUIT the app first:"; printf '  %s\n' "${CREATIVE[@]}"
+  echo
+  echo "  (Caches inside a library bundle — Final Cut, Photos, Lightroom, Logic, Resolve —"
+  echo "   are NOT here: use the app's own purge. See references/creative-pro-targets.md.)"
   echo
   echo "Run a target:      bash clean.sh <key>                 (dry-run preview)"
   echo "Actually reclaim:  DRY_RUN=0 bash clean.sh <key>..."

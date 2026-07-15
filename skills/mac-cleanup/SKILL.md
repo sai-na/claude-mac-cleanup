@@ -1,12 +1,14 @@
 ---
 name: mac-cleanup
 description: >-
-  Reclaim disk space and RAM on Apple Silicon macOS, safely. Use when the user is
-  low on disk, asks what is eating space or memory, wants to clear developer caches
-  (gradle, npm, pnpm, yarn, brew, uv, pip, cargo, go, CocoaPods, Xcode DerivedData,
-  Android NDK/emulators, pub-cache, Docker/colima), or wants to find and stop
-  background dev servers / analyze why Chrome or an app is using so much RAM.
-  Always measures first and asks before deleting anything.
+  Reclaim disk space and RAM on Apple Silicon macOS, safely — for developers AND
+  creative pros. Use when the user is low on disk, asks what is eating space or
+  memory, wants to clear caches for developer tools (gradle, npm, pnpm, yarn, brew,
+  uv, pip, cargo, go, CocoaPods, Xcode, Android NDK/emulators, Docker/colima) OR
+  creative apps (Final Cut, Premiere, After Effects, DaVinci Resolve, Lightroom,
+  Photoshop, Capture One, Logic, Ableton, Pro Tools, Blender, Houdini, Cinema 4D,
+  Unreal, browsers), or wants to find and stop background dev servers / analyze why
+  Chrome or an app is using so much RAM. Always measures first and asks before deleting.
 allowed-tools: Bash(bash:*), Bash(df:*), Bash(du:*), Bash(lsof:*), Bash(ps:*), Bash(pgrep:*), Bash(top:*), Bash(vm_stat:*), Bash(sysctl:*), Bash(memory_pressure:*), Bash(brew services list:*), Bash(colima status:*), Bash(docker ps:*), Bash(docker system df:*), Bash(adb devices:*)
 ---
 
@@ -62,7 +64,28 @@ DRY_RUN=0 bash ${CLAUDE_SKILL_DIR}/scripts/clean.sh <keys...>
   (`ndkVersion`, `flutter.ndkVersion`, `rust-toolchain.toml`, `gradle-wrapper.properties`), keep anything referenced, delete only specific unused versions, and confirm each. See the reference doc.
 - **Docker**: detect the backend first. Docker Desktop's `Docker.raw` is a sparse file — measure with `du`, never `ls`; reclaim with `docker system prune` (never `rm` the image, never `--volumes` without an explicit yes). colima uses `colima stop` / `colima delete`.
 
-### 3 — Stop services & analyze RAM (read-only first)
+### 3 — Creative-pro & app caches (video / photo / audio / 3D)
+Creative caches are the **most dangerous** category — every app stores regenerable cache *inside or
+next to* irreplaceable originals, catalogs, and projects. Follow the golden rules in
+[`references/creative-pro-targets.md`](references/creative-pro-targets.md):
+1. **Prefer the app's own "purge / delete cache" command.** For Final Cut (File ▸ Delete Generated
+   Library Files), Photos (⌘⌥ Repair), Lightroom (Purge Cache / Discard Previews), Logic (Relocate
+   Sound Library), DaVinci Resolve (Delete Render Cache), etc. — there is **no safe filesystem
+   command**, so tell the user the in-app steps rather than deleting files.
+2. **Never reach inside a library bundle** (`.fcpbundle`, `.photoslibrary`, `.cocatalog`, `.logicx`,
+   `<Catalog>.lrcat*`) — the cache and the only copy of the work share the bundle.
+3. For the genuinely-safe, standalone app caches, `clean.sh` has a **CREATIVE** target group that
+   moves files to the **Trash (recoverable)**, not `rm`. Quit the app first:
+   ```
+   bash ${CLAUDE_SKILL_DIR}/scripts/clean.sh --list                 # see CREATIVE keys
+   DRY_RUN=0 bash ${CLAUDE_SKILL_DIR}/scripts/clean.sh adobe_mediacache ae_diskcache browser_cache
+   ```
+   Keys: `adobe_mediacache`, `ae_diskcache`, `camera_raw`, `bridge_cache`, `ableton_cache`,
+   `au_cache`, `logic_cache`, `browser_cache`, `diagnostics`, `quicklook`.
+4. Caches are **user-relocatable** — if the default path is empty, read the configured location from
+   the app's preferences and confirm that drive is mounted before deleting.
+
+### 4 — Stop services & analyze RAM (read-only first)
 ```
 bash ${CLAUDE_SKILL_DIR}/scripts/services.sh
 ```
@@ -82,5 +105,7 @@ Low "free RAM" on macOS is normal; judge pressure by `memory_pressure` % + `sysc
 
 ## Notes
 - Targets Apple Silicon macOS; Homebrew under `/opt/homebrew`; 16 KB VM pages.
-- The scripts skip machines that lack a given toolchain (`command -v` guards), so they degrade cleanly.
-- Full, safety-rated catalog with every path, command, and trap: `references/cleanup-targets.md`.
+- The scripts skip machines that lack a given toolchain/app (`command -v` and existence guards), so they degrade cleanly.
+- Full, safety-rated catalogs with every path, command, and trap:
+  - Developer tools: [`references/cleanup-targets.md`](references/cleanup-targets.md)
+  - Creative pros (video/photo/audio/3D) + general apps: [`references/creative-pro-targets.md`](references/creative-pro-targets.md)

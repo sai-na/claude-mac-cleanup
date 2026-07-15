@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="claude-mac-cleanup — safely reclaim disk and RAM on Apple Silicon macOS" width="100%">
+  <img src="assets/banner.png" alt="claude-mac-cleanup — safely reclaim disk and RAM on Apple Silicon macOS" width="100%">
 </p>
 
 <h1 align="center">claude-mac-cleanup</h1>
@@ -20,13 +20,14 @@
 
 ## What it does
 
-Developer Macs quietly fill up with regenerable junk — build caches, old toolchain
-versions, emulator images, container VMs — and leak RAM to background dev servers and
-runaway browser tabs. This skill helps Claude find and clear that safely:
+Macs quietly fill up with regenerable junk — build caches, render/media caches, old toolchain
+versions, emulator images, container VMs — and leak RAM to background servers and runaway browser
+tabs. This skill helps Claude find and clear that safely, for **developers and creative pros alike**:
 
 - **Measures first.** Reads the *true* free space on Apple Silicon (`/System/Volumes/Data`, not the misleading `/`) and ranks the biggest reclaimable caches.
-- **Clears regenerable caches** with each tool's own cleaner where possible: gradle, npm, pnpm, yarn, Homebrew, uv, pip, cargo, go, CocoaPods, Xcode DerivedData, Bun, Maven, and more.
-- **Handles the tricky, high-value stuff carefully:** Docker Desktop vs colima, Android **NDK / system-images / AVDs**, `.pub-cache` (which also holds globally-activated Dart CLIs), and rustup toolchains — keeping anything your projects pin.
+- **Developer caches** with each tool's own cleaner where possible: gradle, npm, pnpm, yarn, Homebrew, uv, pip, cargo, go, CocoaPods, Xcode DerivedData, Bun, Maven, and more.
+- **Creative-pro caches** — Final Cut / Premiere / After Effects / DaVinci Resolve render & media caches, Lightroom / Photoshop / Capture One previews & scratch, Logic / Ableton / Pro Tools caches, Blender / Houdini / Cinema 4D / Unreal / Nuke caches — with a hard rule to **prefer each app's own purge** and **never reach inside a library bundle** where your originals live.
+- **Handles the tricky, high-value stuff carefully:** Docker Desktop vs colima, Android **NDK / system-images / AVDs**, `.pub-cache`, rustup toolchains — keeping anything your projects pin.
 - **Frees RAM:** finds listening dev servers (port → process → project), stops them gracefully, and explains why Chrome or an app is eating memory (and how to fix it without killing it).
 
 > Built and validated on a real machine that went from **7.5 GB → 76 GB free** — without breaking a single project.
@@ -104,6 +105,23 @@ A selection — the full safety-rated catalog is in
 | colima VM | `colima stop` | 🟡 Caution — reversible |
 | Xcode Archives / dSYMs · iCloud · HF models · credentials | — | 🔴 Never — refused |
 
+### For creative pros
+
+Creative caches sit right next to irreplaceable originals, so these are handled **conservatively**:
+the skill prefers each app's **own purge command**, moves standalone caches to the **Trash
+(recoverable)** instead of `rm`, and **never reaches inside a library bundle**. Full catalog:
+[`references/creative-pro-targets.md`](skills/mac-cleanup/references/creative-pro-targets.md).
+
+| Field | Reclaims | How |
+|---|---|---|
+| 🎬 **Video** | FCP render/optimized/proxy · Adobe Media Cache · AE Disk Cache · Resolve render cache | app purge (FCP "Delete Generated Library Files", Resolve "Delete Render Cache") + Trash for Adobe Common |
+| 📷 **Photo** | Camera Raw cache · Lightroom 1:1 previews · Photoshop scratch · Capture One cache · Bridge cache | in-app Purge/Discard; Trash for standalone caches — never the `.lrcat` / `.cocatalog` |
+| 🎹 **Audio** | Logic/Ableton/AU caches · Pro Tools volume DB · relocate huge sample libraries | app cleanup; **relocate** (don't delete) Kontakt/Spitfire/EastWest libraries |
+| 🧊 **3D/VFX** | Blender/Houdini temp · Redshift/Arnold texture cache · Unreal/Unity/Nuke caches | app "Clear Cache"; resolve relocated paths first |
+| 💬 **Everyone** | Chromium caches (Service Worker/GPUCache) · Spotify · Slack/Teams/Discord · QuickLook · Time Machine local snapshots | Trash the cache subfolders only — never the browser profile |
+
+🔴 **Never touched:** camera originals, `.fcpbundle` / `.photoslibrary` / `.cocatalog` / `.lrcat`, DAW projects & recordings, `~/Music/Audio Music Apps`, Nuke `~/.nuke`, Messages/Mail stores.
+
 ## Use it without installing (copy-paste prompt)
 
 Prefer a plain prompt, or using another assistant? Paste
@@ -124,7 +142,8 @@ claude-mac-cleanup/
 │   │   ├── services.sh         # read-only: dev servers + RAM health
 │   │   └── clean.sh            # guarded, dry-run-by-default reclaim
 │   └── references/
-│       └── cleanup-targets.md  # full safety-rated catalog
+│       ├── cleanup-targets.md         # developer tools catalog
+│       └── creative-pro-targets.md    # video/photo/audio/3D + general apps
 ├── assets/banner.svg
 ├── PROMPT.md                   # standalone copy-paste version
 └── LICENSE

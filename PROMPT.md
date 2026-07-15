@@ -64,7 +64,27 @@ STEP 2 — RECLAIM (only after I confirm)
       Never `rm` Docker.raw; never add `--volumes` without an explicit yes (it erases DB volumes).
     colima: `colima stop` (reversible) or `colima delete` (destroys the VM).
 
-STEP 3 — SERVICES + RAM (read-only first, stop gracefully)
+STEP 3 — CREATIVE-PRO / APP CACHES (most dangerous — caches sit next to originals)
+  GOLDEN RULES: (a) prefer the app's OWN purge command; (b) NEVER reach inside a library bundle
+  (.fcpbundle, .photoslibrary, .cocatalog, .logicx, <Catalog>.lrcat*); (c) move to Trash
+  (recoverable) instead of rm for creative caches; (d) caches are relocatable — read the app's
+  configured path and confirm the drive is mounted; (e) QUIT the app first.
+  App-native purge (no safe filesystem command — tell the user the in-app steps):
+    Final Cut Pro:   File > Delete Generated Library Files (Render/Optimized/Proxy)
+    Premiere/AE:     Settings > Media Cache > Delete Unused; AE > Media & Disk Cache > Empty Disk Cache
+    DaVinci Resolve: Playback > Delete Render Cache > All/Unused
+    Lightroom:       Settings > Performance > Camera Raw Cache > Purge; Library > Previews > Discard 1:1
+    Apple Photos:    quit, relaunch holding Cmd+Option, click Repair (never rm inside .photoslibrary)
+    Logic:           Sound Library > Relocate (don't delete); un-freeze tracks in-app
+    Pro Tools:       delete ONLY .../Digidesign/Databases/Unicode/Volumes — NEVER .../Unicode/Catalogs
+  Standalone caches safe to move to Trash (app quit): ~/Library/Application Support/Adobe/Common/{Media Cache Files,Media Cache,Peak Files}
+    (NOT 'Motion Graphics Templates'), ~/Library/Caches/Adobe/After Effects, ~/Library/Caches/Adobe Camera Raw*,
+    ~/Library/Caches/Ableton/Cache, ~/Library/Caches/AudioUnitCache, ~/Library/Caches/<browser> (never the profile),
+    ~/Library/Logs/DiagnosticReports, and `qlmanage -r cache`.
+  NEVER: camera originals, catalogs (.lrcat/.cocatalog/.fcpbundle), DAW projects & recordings,
+    ~/Music/Audio Music Apps, ~/Music/Ableton/User Library, Nuke ~/.nuke, Messages/Mail stores.
+
+STEP 4 — SERVICES + RAM (read-only first, stop gracefully)
   lsof -nP -iTCP -sTCP:LISTEN            # port -> process; resolve with `ps -p <PID> -o command=`
   DO NOT KILL: ports 5000/7000 = AirPlay (ControlCenter); WindowServer, launchd, coreaudiod,
     Dock, Finder, my editor/browser. Stop DBs with `brew services stop <name>`, never kill -9.
@@ -74,7 +94,7 @@ STEP 3 — SERVICES + RAM (read-only first, stop gracefully)
   Chrome: many renderers is normal (site isolation). One multi-GB renderer = a heavy/leaking tab —
     find it in Chrome's Window > Task Manager (Option+Cmd+Esc) and close/discard it; don't kill PIDs.
 
-STEP 4 — Report the reclaimed delta: re-run `df -h /System/Volumes/Data`.
+STEP 5 — Report the reclaimed delta: re-run `df -h /System/Volumes/Data`.
 ```
 
 ---
