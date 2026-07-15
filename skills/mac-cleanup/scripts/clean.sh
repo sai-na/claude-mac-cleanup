@@ -207,7 +207,15 @@ main() {
   [ "$DRY_RUN" = "0" ] && echo "== LIVE (DRY_RUN=0): will delete ==" || echo "== DRY-RUN (preview only). Pass DRY_RUN=0 to reclaim. =="
   for key in "$@"; do
     fn="t_${key//-/_}"
-    if declare -F "$fn" >/dev/null; then echo "--- $key ---"; "$fn"; else echo "unknown target: $key (try --list)" >&2; fi
+    if declare -F "$fn" >/dev/null; then
+      echo "--- $key ---"
+      # A target may return non-zero simply because its tool/dir is absent (or safe_rm
+      # refused one path). Don't let set -e abort the rest of the batch — isolate each
+      # target and report a skip. Real delete errors still print via safe_rm's own output.
+      "$fn" || echo "  (nothing to do for '$key' — tool/app not installed or already clean)"
+    else
+      echo "unknown target: $key (try --list)" >&2
+    fi
   done
 }
 main "$@"

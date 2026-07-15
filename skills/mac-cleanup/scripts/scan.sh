@@ -62,8 +62,9 @@ else
   echo "Docker Desktop: not installed."
 fi
 if have colima; then
-  echo -n "colima: "; colima status 2>&1 | grep -o 'colima is [a-z]*' | head -1 || echo "unknown"
-  size "$HOME/.colima" | sed 's/^/  disk: /'
+  # colima status exits non-zero when stopped; detect running vs not without a spurious fallback.
+  if colima status >/dev/null 2>&1; then echo "colima: running"; else echo "colima: not running"; fi
+  size "$HOME/.colima" | sed 's/^/  disk (reclaim only via colima delete — destroys the VM): /'
 else
   echo "colima: not installed."
 fi
