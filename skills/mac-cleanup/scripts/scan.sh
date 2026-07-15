@@ -64,7 +64,7 @@ fi
 if have colima; then
   # colima status exits non-zero when stopped; detect running vs not without a spurious fallback.
   if colima status >/dev/null 2>&1; then echo "colima: running"; else echo "colima: not running"; fi
-  size "$HOME/.colima" | sed 's/^/  disk (reclaim only via colima delete — destroys the VM): /'
+  size "$HOME/.colima" | sed 's/^/  disk (a VM, NOT a cache — leave it; safe cleanup can'\''t reclaim this): /'
 else
   echo "colima: not installed."
 fi

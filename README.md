@@ -101,8 +101,9 @@ A selection — the full safety-rated catalog is in
 | `.pub-cache` | `dart pub cache clean` | 🟡 Caution — also de-activates global Dart CLIs |
 | Gradle wrapper dists | delete `~/.gradle/wrapper/dists` | 🟡 Caution — re-downloads distros |
 | Android NDK / images / AVDs | version-specific removal | 🟡 Caution — keep versions your projects pin |
-| Docker | `docker system prune` (never `rm` `Docker.raw`, never blind `--volumes`) | 🟡 Caution |
-| colima VM | `colima stop` | 🟡 Caution — reversible |
+| Docker (safe only) | `docker system prune` — images & build cache, **never volumes** | 🟡 Caution — re-pull later |
+| colima | `colima stop` (reversible) — frees RAM | 🟡 Caution |
+| Docker volumes / `colima delete` / `Docker.raw` | — | 🔴 Never — **data loss, not offered** |
 | Xcode Archives / dSYMs · iCloud · HF models · credentials | — | 🔴 Never — refused |
 
 ### For creative pros

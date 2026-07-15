@@ -62,7 +62,7 @@ DRY_RUN=0 bash ${CLAUDE_SKILL_DIR}/scripts/clean.sh <keys...>
 - Run each **CAUTION** key only when the user picks it (`pub_cache`, `go_modcache`, `gradle_dists`, `maven`, `docker_prune`, `colima_stop`, …), stating the re-download cost.
 - For **version-pinned** artifacts — Android **NDK**, emulator **system-images/AVDs**, **rustup** toolchains, simulator **runtimes** — do NOT bulk-delete. First grep the user's projects for pins
   (`ndkVersion`, `flutter.ndkVersion`, `rust-toolchain.toml`, `gradle-wrapper.properties`), keep anything referenced, delete only specific unused versions, and confirm each. See the reference doc.
-- **Docker**: detect the backend first. Docker Desktop's `Docker.raw` is a sparse file — measure with `du`, never `ls`; reclaim with `docker system prune` (never `rm` the image, never `--volumes` without an explicit yes). colima uses `colima stop` / `colima delete`.
+- **Docker**: only ever do the **safe** reclaim — never anything that loses data. Images and build cache are re-creatable; **named volumes and the VM hold real data**. Use `docker system prune` (no `--volumes`) and `colima stop` (reversible). **Do not run — and do not suggest as cleanup — `colima delete`, `docker … --volumes`, or deleting `Docker.raw`**; those destroy volumes/the VM (DB data). The colima/Docker VM disk is sparse and won't shrink from safe pruning, so treat that space as **not reclaimable — leave it**.
 
 ### 3 — Creative-pro & app caches (video / photo / audio / 3D)
 Creative caches are the **most dangerous** category — every app stores regenerable cache *inside or

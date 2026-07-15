@@ -67,26 +67,41 @@ Grep the user's projects first and keep any referenced version. Delete only spec
 
 ## Containers — detect the backend first
 
-### colima
-| Command | Effect | Safety |
-|---|---|---|
-| `colima stop` | Stops the VM; frees RAM + releases in-use disk | CAUTION (reversible: `colima start`) |
-| `colima delete` | Destroys the VM: **all** containers/images/volumes | DESTRUCTIVE — confirm |
+> **This skill only ever does the *safe* Docker reclaim** — never anything that can lose data. It
+> distinguishes **images/build cache/stopped containers** (re-creatable — re-pulled or rebuilt on
+> demand) from **named volumes and the VM itself** (where databases keep their real data). The
+> data-losing commands below are listed **only so the skill refuses them**; it does not offer or run
+> them as "cleanup."
 
-Disk lives under `~/.colima`. `colima status` exits non-zero with "colima is not running" when stopped — treat as already-stopped, not an error.
+### colima
+| Command | Effect | The skill's stance |
+|---|---|---|
+| `colima stop` | Stops the VM; frees RAM + releases in-use disk | ✅ Safe — reversible with `colima start`. This is the only colima action the skill runs. |
+| `colima delete` | Destroys the VM: **all** containers, images, **and volumes** | ❌ **Data loss — the skill never runs this and does not present it as cleanup.** |
+
+Disk lives under `~/.colima`. The VM disk is sparse and **does not shrink** from `colima stop` or
+`docker prune`, so that space is **not safely reclaimable** — leave it. `colima status` exits
+non-zero with "colima is not running" when stopped — treat as already-stopped, not an error.
 
 ### Docker Desktop
 Detect: `/Applications/Docker.app` **and** `~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw` exist. `Docker.raw` is **one sparse disk image** holding every image/container/volume/build-cache; it only grows and often reaches 30–60 GB+.
 
-| Command | Effect | Safety |
-|---|---|---|
-| `du -sh …/Docker.raw` | REAL size (never `ls`/Finder — they show the apparent max) | SAFE |
-| `docker system df [-v]` | What's reclaimable inside the VM | SAFE (daemon must be running) |
-| `docker system prune` | Stopped containers, dangling images, unused networks, build cache | CAUTION (no volume loss) |
-| `docker builder prune` | Build cache only | CAUTION |
-| `docker run --privileged --pid=host docker/desktop-reclaim-space` | Shrinks `Docker.raw` after a prune (fstrim); deletes nothing | SAFE |
-| `docker system prune -a --volumes` | ALL unused images **+ named volumes** | DESTRUCTIVE — `--volumes` can erase DB data. Confirm. |
-| `rm …/Docker.raw`, the Settings disk-size slider, Troubleshoot ▸ Clean/Purge | Wipe **everything** | NEVER — looks like "free space", destroys all Docker data. |
+**Safe reclaim (no data loss) — what the skill does:**
+| Command | Effect |
+|---|---|
+| `du -sh …/Docker.raw` | REAL size (never `ls`/Finder — they show the apparent max) |
+| `docker system df [-v]` | What's reclaimable inside the VM (daemon must be running) |
+| `docker system prune` | Stopped containers, dangling images, unused networks, build cache — **no volume loss** |
+| `docker builder prune` | Build cache only |
+| `docker image prune -a` | All unused images — re-pullable, so no data loss (just a re-download later) |
+| `docker run --privileged --pid=host docker/desktop-reclaim-space` | Shrinks `Docker.raw` after a prune (fstrim); deletes nothing |
+
+**❌ Data loss — the skill never does these, and won't suggest them as cleanup:**
+- `docker system prune -a --volumes` — `--volumes` erases named volumes = your DB data.
+- `rm …/Docker.raw`, the Settings disk-size slider, Troubleshoot ▸ Clean/Purge — wipe **everything**.
+- To reclaim a volume's space you must first back it up, then remove it deliberately — that's a manual
+  decision, not a cleanup step:
+  `docker run --rm -v <vol>:/data -v "$PWD":/backup alpine tar czf /backup/<vol>.tgz /data`
 
 ## NEVER — refuse and explain
 
@@ -109,4 +124,6 @@ Detect: `/Applications/Docker.app` **and** `~/Library/Containers/com.docker.dock
   partially with Chrome open). Quit the app for a full clean.
 - **Never `sudo rm`** in a cleanup path — it turns an empty-variable slip from user-scoped into
   system-scoped disaster. The only legitimate `sudo` here is `tmutil` snapshot thinning.
-- **`docker system prune --volumes` / `colima delete`** = permanent data loss (named volumes / whole VM).
+- **`docker system prune --volumes` / `colima delete` / deleting `Docker.raw`** = permanent data loss
+  (named volumes hold DB data; `colima delete` takes the whole VM). The skill treats these as
+  off-limits — it does the safe prune only, and never pitches the VM's disk as reclaimable.

@@ -59,10 +59,12 @@ STEP 2 — RECLAIM (only after I confirm)
       keep those, delete only specific unused versions (kill a running emulator: `adb -s <serial> emu kill`).
     rustup: keep the `(active, default)` toolchain and any `rust-toolchain.toml` pin;
       remove others with `rustup toolchain uninstall <name>`.
-  DOCKER (detect backend first):
-    Docker Desktop: measure Docker.raw with `du -sh` (NOT ls); reclaim with `docker system prune`.
-      Never `rm` Docker.raw; never add `--volumes` without an explicit yes (it erases DB volumes).
-    colima: `colima stop` (reversible) or `colima delete` (destroys the VM).
+  DOCKER (safe reclaim ONLY — never lose data):
+    Images and build cache are re-creatable; named volumes and the VM hold real data (databases).
+    DO: `docker system prune` (no --volumes), `docker builder prune`, `colima stop` (reversible).
+    NEVER do, and never suggest as cleanup: `docker … --volumes`, `colima delete`, deleting Docker.raw
+      — these erase volumes / the whole VM = permanent data loss. The VM disk is sparse and won't
+      shrink from safe pruning, so treat that space as NOT reclaimable — leave it.
 
 STEP 3 — CREATIVE-PRO / APP CACHES (most dangerous — caches sit next to originals)
   GOLDEN RULES: (a) prefer the app's OWN purge command; (b) NEVER reach inside a library bundle
