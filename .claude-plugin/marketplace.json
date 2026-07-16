@@ -9,7 +9,7 @@
       "name": "mac-cleanup",
       "source": "./",
       "description": "Safely reclaim disk space and RAM on Apple Silicon macOS. Scan-first, confirm-before-delete.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "MIT",
       "homepage": "https://github.com/sai-na/claude-mac-cleanup",
       "keywords": ["macos", "apple-silicon", "disk", "cleanup", "cache", "ram", "developer"],

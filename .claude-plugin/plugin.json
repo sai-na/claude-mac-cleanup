@@ -1,6 +1,6 @@
 {
   "name": "mac-cleanup",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Safely reclaim disk space and RAM on Apple Silicon macOS. Scan-first, confirm-before-delete.",
   "author": { "name": "SAI NATH A" },
   "homepage": "https://github.com/sai-na/claude-mac-cleanup",
