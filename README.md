@@ -46,17 +46,25 @@ No warranty — review what it proposes before you confirm.
 
 ## Install
 
-### Option A — Plugin (recommended, two commands)
+### Option A — Plugin (recommended)
 
-In Claude Code:
+In Claude Code, run these as **two separate commands, one at a time** (don't paste both at once —
+`/plugin marketplace add` opens a prompt, so the second line would land in that input field).
+
+**Step 1 — add the marketplace:**
 
 ```
 /plugin marketplace add sai-na/claude-mac-cleanup
+```
+
+**Step 2 — after it's added, install the plugin:**
+
+```
 /plugin install mac-cleanup@claude-mac-cleanup
 ```
 
 Then just ask naturally (*"what's eating my disk?"*, *"free up some space and RAM"*) or run
-`/mac-cleanup:mac-cleanup`.
+`/mac-cleanup:mac-cleanup`. To update later: `/plugin marketplace update claude-mac-cleanup`.
 
 ### Option B — Manual (clone into your skills folder)
 
